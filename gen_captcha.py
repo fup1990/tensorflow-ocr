@@ -27,11 +27,24 @@ def captcha_text_image():
     captcha = image.generate(captcha_text)
     # 转换为图片格式
     captcha_image = Image.open(captcha)
-    # 转化为numpy数组
+    # 转化为numpy数组 shape=(60, 160, 3)
     captcha_image = np.array(captcha_image)
+
+    captcha_image = convert2gray(captcha_image)
 
     return captcha_text, captcha_image
 
-# captcha_text, captcha_image = captcha_text_image()
-# plt.imshow(captcha_image)
-# plt.show()
+# 把彩色图像转为灰度图像
+def convert2gray(img):
+    if len(img.shape) > 2:
+        # gray = np.mean(img, -1)
+        # 上面的转法较快，正规转法如下
+        r, g, b = img[:,:,0], img[:,:,1], img[:,:,2]
+        gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+        return gray
+    else:
+        return img
+
+captcha_text, captcha_image = captcha_text_image()
+plt.imshow(captcha_image)
+plt.show()

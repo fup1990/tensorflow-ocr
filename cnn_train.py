@@ -21,7 +21,6 @@ def next_batch(batch_size=64):
         image = image.flatten() / 256
         batch_x[i, :] = image
         vec = wv.word2vec(text)
-        v = vec.flatten()
         batch_y[i, :] = vec.flatten()
 
     return batch_x, batch_y

@@ -32,6 +32,6 @@ def captcha_text_image():
 
     return captcha_text, captcha_image
 
-captcha_text, captcha_image = captcha_text_image()
-plt.imshow(captcha_image)
-plt.show()
+# captcha_text, captcha_image = captcha_text_image()
+# plt.imshow(captcha_image)
+# plt.show()

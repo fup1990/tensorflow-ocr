@@ -17,9 +17,9 @@ def random_captcha_text(char_set=number + alphabet + ALPHABET, size=4):
         text.append(r)
     return text
 
-def captcha_text_image():
+def captcha_text_image(word_num):
 
-    captcha_text = random_captcha_text()
+    captcha_text = random_captcha_text(size=word_num)
     captcha_text = ''.join(captcha_text)
 
     # 导入验证码包 生成一张空白图
@@ -45,6 +45,6 @@ def convert2gray(img):
     else:
         return img
 
-captcha_text, captcha_image = captcha_text_image()
-plt.imshow(captcha_image)
-plt.show()
+# captcha_text, captcha_image = captcha_text_image()
+# plt.imshow(captcha_image)
+# plt.show()

@@ -1,14 +1,14 @@
 from gen_captcha import number, alphabet, ALPHABET
 import numpy as np
 
-char_set = number + alphabet + ALPHABET
-char_num = len(number) + len(alphabet) + len(ALPHABET)
+CHAR_SET = number + alphabet + ALPHABET
+CHAR_NUM = len(number) + len(alphabet) + len(ALPHABET)
 
 def word2vec(word):
     word_num = len(word)
-    vec = np.zeros((word_num, char_num))
+    vec = np.zeros((word_num, CHAR_NUM))
     for index, char in enumerate(word):
-        i = char_set.index(char)
+        i = CHAR_SET.index(char)
         vec[index][i] = 1
     return vec
 
@@ -18,5 +18,5 @@ def vec2word(vec):
         char_vec = vec[i]
         no_zero = np.nonzero(char_vec)[0]
         for j in no_zero:
-            word += char_set[j]
+            word += CHAR_SET[j]
     return word

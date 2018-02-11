@@ -1,2 +1,3 @@
 .idea/*
 __pycache__/gen_captcha.cpython-36.pyc
+__pycache__/word_vec.cpython-36.pyc

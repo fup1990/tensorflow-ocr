@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 import gen_captcha as gc
 import word_vec as wv
 
@@ -18,15 +17,9 @@ def next_batch(batch_size=64):
     for i in range(batch_size):
         text, image = gc.captcha_text_image(WORD_NUM)
         # 一维化
-        image = image.flatten() / 256
+        image = image.reshape(-1) / 256
         batch_x[i, :] = image
         vec = wv.word2vec(text)
-        batch_y[i, :] = vec.flatten()
+        batch_y[i, :] = vec.reshape(-1)
 
     return batch_x, batch_y
-
-
-
-batch_x, batch_y = next_batch()
-print(batch_x)
-print(batch_y)

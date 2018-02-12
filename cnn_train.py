@@ -8,6 +8,12 @@ IMAGE_HEIGHT = 60
 IMAGE_WIDTH = 160
 # 字符数量
 WORD_NUM = 4
+# 全连接网络节点数量
+FULL_SIZE = 512
+
+X = tf.placeholder(dtype=tf.float32, shape=[None, IMAGE_WIDTH * IMAGE_HEIGHT])
+Y = tf.placeholder(dtype=tf.float32, shape=[None, WORD_NUM * wv.CHAR_NUM])
+dropout = tf.placeholder(dtype=tf.float32)
 
 def next_batch(batch_size=64):
     # 图片数据
@@ -25,10 +31,7 @@ def next_batch(batch_size=64):
 
     return batch_x, batch_y
 
-def train_cnn():
-    X = tf.placeholder(dtype=tf.float32, shape=[None, IMAGE_WIDTH * IMAGE_HEIGHT])
-    Y = tf.placeholder(dtype=tf.float32, shape=[None, WORD_NUM * wv.CHAR_NUM])
-    dropout = tf.placeholder(dtype=tf.float32)
+def cnn_outputs():
 
     # 将X转化为图片的shape(60，160，1)
     x = tf.reshape(X, shape=[-1, IMAGE_HEIGHT, IMAGE_WIDTH, 1])
@@ -40,27 +43,50 @@ def train_cnn():
     a1 = tf.nn.bias_add(c1, b1)
     actived1 = tf.nn.relu(a1)
     pool1 = tf.nn.max_pool(actived1, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
-    d1 = tf.nn.dropout(pool1, dropout)
 
     w2 = tf.get_variable('weights2', [3, 3, 32, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
     b2 = tf.get_variable('biases2', [64], initializer=tf.constant_initializer(0.1))
-    c2 = tf.nn.conv2d(d1, w2, strides=[1, 1, 1, 1], padding='SAME')
+    c2 = tf.nn.conv2d(pool1, w2, strides=[1, 1, 1, 1], padding='SAME')
     a2 = tf.nn.bias_add(c2, b2)
     actived2 = tf.nn.relu(a2)
     pool2 = tf.nn.max_pool(actived2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
-    d2 = tf.nn.dropout(pool2, dropout)
 
     w3 = tf.get_variable('weights3', [3, 3, 64, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
     b3 = tf.get_variable('biases3', [64], initializer=tf.constant_initializer(0.1))
-    c3 = tf.nn.conv2d(d2, w3, strides=[1, 1, 1, 1], padding='SAME')
+    c3 = tf.nn.conv2d(pool2, w3, strides=[1, 1, 1, 1], padding='SAME')
     a3 = tf.nn.bias_add(c3, b3)
     actived3 = tf.nn.relu(a3)
-    pool3 = tf.nn.max_pool(actived3, ksize=[1, 2, 2, 2], strides=[1, 1, 1, 1], padding='SAME')
-    d3 = tf.nn.dropout(pool3, dropout)
+    pool3 = tf.nn.max_pool(actived3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+
+    # 计算将池化后的矩阵reshape成向量后的长度
+    pool_shape = pool3.get_shape().as_list()
+    nodes = pool_shape[1] * pool_shape[2] * pool_shape[3]
+
+    w4 = tf.get_variable('weights4', [nodes, FULL_SIZE], initializer=tf.truncated_normal_initializer(stddev=0.1))
+    b4 = tf.get_variable('biases4', [FULL_SIZE], initializer=tf.constant_initializer(0.1))
+    # 将池化后的矩阵reshape成向量
+    dense = tf.reshape(pool3, [-1, nodes])
+    actived4 = tf.nn.relu(tf.nn.bias_add(tf.matmul(dense, w4), bias=b4))
+    d1 = tf.nn.dropout(actived4, dropout)
+
+    w5 = tf.get_variable('weights5', [FULL_SIZE, WORD_NUM * wv.CHAR_NUM], initializer=tf.truncated_normal_initializer(stddev=0.1))
+    b5 = tf.get_variable('biases5', [WORD_NUM * wv.CHAR_NUM], initializer=tf.constant_initializer(0.1))
+    outputs = tf.nn.relu(tf.nn.bias_add(tf.matmul(d1, w5), bias=b5))
+    return outputs
+
+def run_training():
+    outputs = cnn_outputs()
+
+    loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=Y, logits=outputs))
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
 
     with tf.Session() as sess:
         init = tf.initialize_all_variables()
         sess.run(init)
-        print(d3.shape)
+        for i in range(100):
+            batch_x, batch_y = next_batch(32)
+            accuracy = sess.run(loss, feed_dict={X: batch_x, Y: batch_y, dropout: 1})
+            print(accuracy)
 
-train_cnn()
+
+run_training()

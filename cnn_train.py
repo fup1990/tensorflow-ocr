@@ -10,6 +10,8 @@ IMAGE_WIDTH = 160
 WORD_NUM = 4
 # 全连接网络节点数量
 FULL_SIZE = 512
+# 持久化模型路径
+MODEL_DIR = 'model/captcha.ckpt'
 
 X = tf.placeholder(dtype=tf.float32, shape=[None, IMAGE_WIDTH * IMAGE_HEIGHT])
 Y = tf.placeholder(dtype=tf.float32, shape=[None, WORD_NUM * wv.CHAR_NUM])
@@ -80,13 +82,18 @@ def run_training():
     loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=Y, logits=outputs))
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
 
+    saver = tf.train.Saver()
     with tf.Session() as sess:
         init = tf.initialize_all_variables()
         sess.run(init)
-        for i in range(100):
+        checkpoint = tf.train.latest_checkpoint(MODEL_DIR)
+        if checkpoint:
+            saver.restore(sess, checkpoint)
+        epoch = 0
+        while True:
             batch_x, batch_y = next_batch(32)
-            accuracy = sess.run(loss, feed_dict={X: batch_x, Y: batch_y, dropout: 1})
-            print(accuracy)
-
-
-run_training()
+            _, accuracy = sess.run([optimizer, loss], feed_dict={X: batch_x, Y: batch_y, dropout: 0.75})
+            epoch += 1
+            if epoch % 10 == 0:
+                saver.save(sess, MODEL_DIR, global_step=epoch)
+                print('Epoch is {}, loss is {}'.format(epoch, accuracy))

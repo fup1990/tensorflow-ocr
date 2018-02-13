@@ -98,5 +98,3 @@ def run_training():
             if epoch % 10 == 0:
                 saver.save(sess, CKPT_PATH, global_step=epoch)
                 print('Epoch is {}, loss is {}'.format(epoch, accuracy))
-
-run_training()

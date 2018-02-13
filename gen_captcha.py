@@ -37,14 +37,8 @@ def captcha_text_image(word_num):
 # 把彩色图像转为灰度图像
 def convert2gray(img):
     if len(img.shape) > 2:
-        # gray = np.mean(img, -1)
-        # 上面的转法较快，正规转法如下
-        r, g, b = img[:,:,0], img[:,:,1], img[:,:,2]
+        r, g, b = img[:, :, 0], img[:, :, 1], img[:, :, 2]
         gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
         return gray
     else:
         return img
-
-# captcha_text, captcha_image = captcha_text_image()
-# plt.imshow(captcha_image)
-# plt.show()

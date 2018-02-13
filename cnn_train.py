@@ -46,28 +46,28 @@ def cnn_outputs():
     actived1 = tf.nn.relu(a1)
     pool1 = tf.nn.max_pool(actived1, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
-    w2 = tf.get_variable('weights2', [3, 3, 32, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    b2 = tf.get_variable('biases2', [64], initializer=tf.constant_initializer(0.1))
-    c2 = tf.nn.conv2d(pool1, w2, strides=[1, 1, 1, 1], padding='SAME')
-    a2 = tf.nn.bias_add(c2, b2)
-    actived2 = tf.nn.relu(a2)
-    pool2 = tf.nn.max_pool(actived2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
-
-    w3 = tf.get_variable('weights3', [3, 3, 64, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    b3 = tf.get_variable('biases3', [64], initializer=tf.constant_initializer(0.1))
-    c3 = tf.nn.conv2d(pool2, w3, strides=[1, 1, 1, 1], padding='SAME')
-    a3 = tf.nn.bias_add(c3, b3)
-    actived3 = tf.nn.relu(a3)
-    pool3 = tf.nn.max_pool(actived3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+    # w2 = tf.get_variable('weights2', [3, 3, 32, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
+    # b2 = tf.get_variable('biases2', [64], initializer=tf.constant_initializer(0.1))
+    # c2 = tf.nn.conv2d(pool1, w2, strides=[1, 1, 1, 1], padding='SAME')
+    # a2 = tf.nn.bias_add(c2, b2)
+    # actived2 = tf.nn.relu(a2)
+    # pool2 = tf.nn.max_pool(actived2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+    #
+    # w3 = tf.get_variable('weights3', [3, 3, 64, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
+    # b3 = tf.get_variable('biases3', [64], initializer=tf.constant_initializer(0.1))
+    # c3 = tf.nn.conv2d(pool2, w3, strides=[1, 1, 1, 1], padding='SAME')
+    # a3 = tf.nn.bias_add(c3, b3)
+    # actived3 = tf.nn.relu(a3)
+    # pool3 = tf.nn.max_pool(actived3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
     # 计算将池化后的矩阵reshape成向量后的长度
-    pool_shape = pool3.get_shape().as_list()
+    pool_shape = pool1.get_shape().as_list()
     nodes = pool_shape[1] * pool_shape[2] * pool_shape[3]
 
     w4 = tf.get_variable('weights4', [nodes, FULL_SIZE], initializer=tf.truncated_normal_initializer(stddev=0.1))
     b4 = tf.get_variable('biases4', [FULL_SIZE], initializer=tf.constant_initializer(0.1))
     # 将池化后的矩阵reshape成向量
-    dense = tf.reshape(pool3, [-1, nodes])
+    dense = tf.reshape(pool1, [-1, nodes])
     actived4 = tf.nn.relu(tf.nn.bias_add(tf.matmul(dense, w4), bias=b4))
     d1 = tf.nn.dropout(actived4, dropout)
 
@@ -80,7 +80,7 @@ def run_training():
     outputs = cnn_outputs()
 
     loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=Y, logits=outputs))
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(loss)
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
@@ -91,9 +91,9 @@ def run_training():
             saver.restore(sess, checkpoint)
         epoch = 0
         while True:
-            batch_x, batch_y = next_batch(32)
+            batch_x, batch_y = next_batch(64)
             _, accuracy = sess.run([optimizer, loss], feed_dict={X: batch_x, Y: batch_y, dropout: 0.75})
+            print('Epoch is {}, loss is {}'.format(epoch, accuracy))
             epoch += 1
             if epoch % 10 == 0:
                 saver.save(sess, MODEL_DIR, global_step=epoch)
-                print('Epoch is {}, loss is {}'.format(epoch, accuracy))

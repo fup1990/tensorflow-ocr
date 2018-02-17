@@ -42,51 +42,51 @@ def cnn_outputs():
     x = tf.reshape(X, shape=[-1, IMAGE_HEIGHT, IMAGE_WIDTH, 1])
 
     # 四维矩阵的权重参数，3, 3是过滤器的尺寸，1为图片深度， 64为filter数量
-    # w1 = tf.get_variable('weights1', [3, 3, 1, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    # b1 = tf.get_variable('biases1', [64], initializer=tf.constant_initializer(0.1))
-    # c1 = tf.nn.conv2d(x, w1, strides=[1, 2, 2, 1], padding='SAME')
-    # a1 = tf.nn.bias_add(c1, b1)
+    weight1 = tf.get_variable('weights1', [3, 3, 1, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
+    bias1 = tf.get_variable('bias1', [64], initializer=tf.constant_initializer(0.1))
+    kernel1 = tf.nn.conv2d(x, weight1, strides=[1, 2, 2, 1], padding='SAME')
+    conv1 = tf.nn.relu(tf.nn.bias_add(kernel1, bias1))
     # 输出shape(60, 160, 64)
-    # actived1 = tf.nn.relu(a1)
-    # pool1 = tf.nn.max_pool(actived1, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+    pool1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+    # norm1 = tf.nn.lrn(pool1, )
 
-    # w2 = tf.get_variable('weights2', [3, 3, 64, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    # b2 = tf.get_variable('biases2', [64], initializer=tf.constant_initializer(0.1))
-    # c2 = tf.nn.conv2d(actived1, w2, strides=[1, 1, 1, 1], padding='SAME')
-    # a2 = tf.nn.bias_add(c2, b2)
-    # actived2 = tf.nn.relu(a2)
-    # pool2 = tf.nn.max_pool(actived2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+    weight2 = tf.get_variable('weights2', [3, 3, 64, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
+    bias2 = tf.get_variable('bias2', [64], initializer=tf.constant_initializer(0.1))
+    kernel2 = tf.nn.conv2d(pool1, weight2, strides=[1, 1, 1, 1], padding='SAME')
+    conv2 = tf.nn.relu(tf.nn.bias_add(kernel2, bias2))
+    pool2 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
-    # w3 = tf.get_variable('weights3', [3, 3, 64, 128], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    # b3 = tf.get_variable('biases3', [128], initializer=tf.constant_initializer(0.1))
-    # c3 = tf.nn.conv2d(actived2, w3, strides=[1, 1, 1, 1], padding='SAME')
-    # a3 = tf.nn.bias_add(c3, b3)
-    # actived3 = tf.nn.relu(a3)
-    # pool = tf.nn.max_pool(actived3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+    weight3 = tf.get_variable('weights3', [3, 3, 64, 128], initializer=tf.truncated_normal_initializer(stddev=0.1))
+    bias3 = tf.get_variable('bias3', [128], initializer=tf.constant_initializer(0.1))
+    kernel3 = tf.nn.conv2d(pool2, weight3, strides=[1, 1, 1, 1], padding='SAME')
+    conv3 = tf.nn.relu(tf.nn.bias_add(kernel3, bias3))
+    pool3 = tf.nn.max_pool(conv3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
     # 使用slim简写3层卷积层
     # conv = slim.repeat(x, 3, slim.conv2d, 64, [3, 3], scope='conv')
-    conv = slim.stack(x, slim.conv2d, [(64, [3, 3]), (64, [3, 3]), (128, [3, 3])], scope='conv')
-    pool = slim.max_pool2d(conv, [2, 2], scope='pool')
+    # conv = slim.stack(x, slim.conv2d, [(64, [3, 3]), (64, [3, 3]), (128, [3, 3])], scope='conv')
+    # pool = slim.max_pool2d(conv, [2, 2], scope='pool')
 
     # 计算将池化后的矩阵reshape成向量后的长度
-    pool_shape = pool.get_shape().as_list()
+    pool_shape = pool3.get_shape().as_list()
     nodes = pool_shape[1] * pool_shape[2] * pool_shape[3]
 
-    # w4 = tf.get_variable('weights4', [nodes, FULL_SIZE], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    # b4 = tf.get_variable('biases4', [FULL_SIZE], initializer=tf.constant_initializer(0.1))
     # 将池化后的矩阵reshape成向量
-    dense = tf.reshape(pool, [-1, nodes])
-    # actived4 = tf.nn.relu(tf.nn.bias_add(tf.matmul(dense, w4), bias=b4))
+    dense = tf.reshape(pool3, [-1, nodes])
 
-    # w5 = tf.get_variable('weights5', [FULL_SIZE, WORD_NUM * wv.CHAR_NUM], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    # b5 = tf.get_variable('biases5', [WORD_NUM * wv.CHAR_NUM], initializer=tf.constant_initializer(0.1))
-    # actived5 = tf.nn.relu(tf.nn.bias_add(tf.matmul(d1, w5), bias=b5))
+    weights4 = tf.get_variable('weights4', [nodes, FULL_SIZE], initializer=tf.truncated_normal_initializer(stddev=0.1))
+    bias4 = tf.get_variable('bias4', [FULL_SIZE], initializer=tf.constant_initializer(0.1))
+    local4 = tf.nn.relu(tf.nn.bias_add(tf.matmul(dense, weights4), bias=bias4))
 
-    fc1 = slim.fully_connected(dense, FULL_SIZE, scope='fc1')
-    d1 = tf.nn.dropout(fc1, dropout)
-    fc2 = slim.fully_connected(d1, WORD_NUM * wv.CHAR_NUM, scope='fc2')
-    outputs = tf.nn.dropout(fc2, dropout)
+    weight5 = tf.get_variable('weights5', [FULL_SIZE, WORD_NUM * wv.CHAR_NUM], initializer=tf.truncated_normal_initializer(stddev=0.1))
+    bias5 = tf.get_variable('bias5', [WORD_NUM * wv.CHAR_NUM], initializer=tf.constant_initializer(0.1))
+    outputs = tf.nn.relu(tf.nn.bias_add(tf.matmul(local4, weight5), bias=bias5))
+
+
+    # fc1 = slim.fully_connected(dense, FULL_SIZE, scope='fc1')
+    # d1 = tf.nn.dropout(fc1, dropout)
+    # fc2 = slim.fully_connected(d1, WORD_NUM * wv.CHAR_NUM, scope='fc2')
+    # outputs = tf.nn.dropout(local5, dropout)
     
     return outputs
 
@@ -107,11 +107,11 @@ def run_training():
             epoch += int(checkpoint.split('-')[-1])
 
         while True:
-            batch_x, batch_y = next_batch(128)
+            batch_x, batch_y = next_batch(64)
             _, accuracy = sess.run([optimizer, loss], feed_dict={X: batch_x, Y: batch_y, dropout: 0.75})
             print('Epoch is {}, loss is {}, time is {}'.format(epoch, accuracy, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
             epoch += 1
             if epoch % 10 == 0:
                 saver.save(sess, CKPT_PATH, global_step=epoch)
 
-# run_training()
+run_training()

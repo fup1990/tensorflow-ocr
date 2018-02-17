@@ -2,6 +2,7 @@ import numpy as np
 import gen_captcha as gc
 import word_vec as wv
 import tensorflow as tf
+import time
 slim = tf.contrib.slim
 
 # 图像大小
@@ -10,7 +11,7 @@ IMAGE_WIDTH = 160
 # 字符数量
 WORD_NUM = 4
 # 全连接网络节点数量
-FULL_SIZE = 512
+FULL_SIZE = 1024
 # 持久化模型路径
 CKPT_DIR = 'model/'
 CKPT_PATH = CKPT_DIR + 'captcha.ckpt'
@@ -48,23 +49,24 @@ def cnn_outputs():
     # 输出shape(60, 160, 64)
     # actived1 = tf.nn.relu(a1)
     # pool1 = tf.nn.max_pool(actived1, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
-    #
+
     # w2 = tf.get_variable('weights2', [3, 3, 64, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
     # b2 = tf.get_variable('biases2', [64], initializer=tf.constant_initializer(0.1))
     # c2 = tf.nn.conv2d(actived1, w2, strides=[1, 1, 1, 1], padding='SAME')
     # a2 = tf.nn.bias_add(c2, b2)
     # actived2 = tf.nn.relu(a2)
     # pool2 = tf.nn.max_pool(actived2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
-    #
-    # w3 = tf.get_variable('weights3', [3, 3, 64, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    # b3 = tf.get_variable('biases3', [64], initializer=tf.constant_initializer(0.1))
+
+    # w3 = tf.get_variable('weights3', [3, 3, 64, 128], initializer=tf.truncated_normal_initializer(stddev=0.1))
+    # b3 = tf.get_variable('biases3', [128], initializer=tf.constant_initializer(0.1))
     # c3 = tf.nn.conv2d(actived2, w3, strides=[1, 1, 1, 1], padding='SAME')
     # a3 = tf.nn.bias_add(c3, b3)
     # actived3 = tf.nn.relu(a3)
-    # pool3 = tf.nn.max_pool(actived3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+    # pool = tf.nn.max_pool(actived3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
     # 使用slim简写3层卷积层
-    conv = slim.repeat(x, 3, slim.conv2d, 64, [3, 3], scope='conv')
+    # conv = slim.repeat(x, 3, slim.conv2d, 64, [3, 3], scope='conv')
+    conv = slim.stack(x, slim.conv2d, [(64, [3, 3]), (64, [3, 3]), (128, [3, 3])], scope='conv')
     pool = slim.max_pool2d(conv, [2, 2], scope='pool')
 
     # 计算将池化后的矩阵reshape成向量后的长度
@@ -92,22 +94,24 @@ def run_training():
     outputs = cnn_outputs()
 
     loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=Y, logits=outputs))
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(loss)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
         init = tf.initialize_all_variables()
         sess.run(init)
         checkpoint = tf.train.latest_checkpoint(CKPT_DIR)
+        epoch = 0
         if checkpoint:
             saver.restore(sess, checkpoint)
-        epoch = 0
+            epoch += int(checkpoint.split('-')[-1])
+
         while True:
-            batch_x, batch_y = next_batch(64)
+            batch_x, batch_y = next_batch(128)
             _, accuracy = sess.run([optimizer, loss], feed_dict={X: batch_x, Y: batch_y, dropout: 0.75})
+            print('Epoch is {}, loss is {}, time is {}'.format(epoch, accuracy, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
             epoch += 1
             if epoch % 10 == 0:
                 saver.save(sess, CKPT_PATH, global_step=epoch)
-                print('Epoch is {}, loss is {}'.format(epoch, accuracy))
 
-run_training()
+# run_training()

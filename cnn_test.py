@@ -1,16 +1,15 @@
 import tensorflow as tf
-from cnn_train import WORD_NUM, cnn_outputs, X, dropout, CKPT_DIR
+from cnn_train import WORD_NUM, inference, X, dropout, CKPT_DIR
 from gen_captcha import captcha_text_image
 from word_vec import vec2word, CHAR_NUM
 import numpy as np
 
-def test_captcha():
+def predict_captcha():
     text, image = captcha_text_image(WORD_NUM)
     image = image.reshape(-1) / 256
-    outputs = cnn_outputs()
-    outputs = tf.reshape(outputs, [-1, WORD_NUM, CHAR_NUM])
-    prediction = tf.nn.softmax(outputs)
-    prediction = tf.argmax(prediction[0], axis=1)
+    outputs = inference()
+    outputs = tf.nn.softmax(tf.reshape(outputs, [-1, WORD_NUM, CHAR_NUM]))
+    prediction = tf.argmax(outputs[0], axis=1)
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
@@ -20,11 +19,16 @@ def test_captcha():
         if checkpoint:
             saver.restore(sess, checkpoint)
 
-        vector = sess.run(prediction, feed_dict={X: [image], dropout: 1})
-
+        vector = sess.run([prediction], feed_dict={X: [image], dropout: 1})
         output = np.zeros((WORD_NUM, CHAR_NUM))
         for i in range(len(vector)):
             index = vector[i]
             output[i][index] = 1
         predict_text = vec2word(output)
         print("正确: {}  预测: {}".format(text, predict_text))
+
+def main(_):
+    predict_captcha()
+
+if __name__ == '__main__':
+    tf.app.run()

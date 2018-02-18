@@ -15,10 +15,19 @@ FULL_SIZE = 512
 # 持久化模型路径
 CKPT_DIR = 'model/'
 CKPT_PATH = CKPT_DIR + 'captcha.ckpt'
+LOG_DIR = 'log/'
 
 X = tf.placeholder(dtype=tf.float32, shape=[None, IMAGE_WIDTH * IMAGE_HEIGHT])
 Y = tf.placeholder(dtype=tf.float32, shape=[None, WORD_NUM * wv.CHAR_NUM])
 dropout = tf.placeholder(dtype=tf.float32)
+
+def variable_summary(name,var):
+    with tf.name_scope("summaries"):
+        tf.summary.histogram(name, var)
+        mean = tf.reduce_mean(var)
+        tf.summary.scalar("mean/" + name, mean)
+        stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+        tf.summary.scalar("stddev/" + name, stddev)
 
 def next_batch(batch_size=64):
     # 图片数据
@@ -36,31 +45,45 @@ def next_batch(batch_size=64):
 
     return batch_x, batch_y
 
-def cnn_outputs():
+def inference():
 
     # 将X转化为图片的shape(60，160，1)
     x = tf.reshape(X, shape=[-1, IMAGE_HEIGHT, IMAGE_WIDTH, 1])
 
-    # 四维矩阵的权重参数，3, 3是过滤器的尺寸，1为图片深度， 64为filter数量
-    weight1 = tf.get_variable('weights1', [3, 3, 1, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    bias1 = tf.get_variable('bias1', [64], initializer=tf.constant_initializer(0.1))
-    kernel1 = tf.nn.conv2d(x, weight1, strides=[1, 2, 2, 1], padding='SAME')
-    conv1 = tf.nn.relu(tf.nn.bias_add(kernel1, bias1))
-    # 输出shape(60, 160, 64)
-    pool1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
-    # norm1 = tf.nn.lrn(pool1, )
+    with tf.variable_scope('conv1'):
+        # 四维矩阵的权重参数，3, 3是过滤器的尺寸，1为图片深度， 64为filter数量
+        weight1 = tf.get_variable('weights1', [3, 3, 1, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
+        variable_summary('weights1', weight1)
 
-    weight2 = tf.get_variable('weights2', [3, 3, 64, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    bias2 = tf.get_variable('bias2', [64], initializer=tf.constant_initializer(0.1))
-    kernel2 = tf.nn.conv2d(pool1, weight2, strides=[1, 1, 1, 1], padding='SAME')
-    conv2 = tf.nn.relu(tf.nn.bias_add(kernel2, bias2))
-    pool2 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+        bias1 = tf.get_variable('bias1', [64], initializer=tf.constant_initializer(0.1))
+        variable_summary('bias1', bias1)
 
-    weight3 = tf.get_variable('weights3', [3, 3, 64, 128], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    bias3 = tf.get_variable('bias3', [128], initializer=tf.constant_initializer(0.1))
-    kernel3 = tf.nn.conv2d(pool2, weight3, strides=[1, 1, 1, 1], padding='SAME')
-    conv3 = tf.nn.relu(tf.nn.bias_add(kernel3, bias3))
-    pool3 = tf.nn.max_pool(conv3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+        kernel1 = tf.nn.conv2d(x, weight1, strides=[1, 2, 2, 1], padding='SAME')
+        conv1 = tf.nn.relu(tf.nn.bias_add(kernel1, bias1))
+        # 输出shape(60, 160, 64)
+        pool1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+
+    with tf.variable_scope('conv2'):
+        weight2 = tf.get_variable('weights2', [3, 3, 64, 64], initializer=tf.truncated_normal_initializer(stddev=0.1))
+        variable_summary('weights2', weight2)
+
+        bias2 = tf.get_variable('bias2', [64], initializer=tf.constant_initializer(0.1))
+        variable_summary('bias2', bias2)
+
+        kernel2 = tf.nn.conv2d(pool1, weight2, strides=[1, 1, 1, 1], padding='SAME')
+        conv2 = tf.nn.relu(tf.nn.bias_add(kernel2, bias2))
+        pool2 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+
+    with tf.variable_scope('conv3'):
+        weight3 = tf.get_variable('weights3', [3, 3, 64, 128], initializer=tf.truncated_normal_initializer(stddev=0.1))
+        variable_summary('weights3', weight3)
+
+        bias3 = tf.get_variable('bias3', [128], initializer=tf.constant_initializer(0.1))
+        variable_summary('bias3', bias3)
+
+        kernel3 = tf.nn.conv2d(pool2, weight3, strides=[1, 1, 1, 1], padding='SAME')
+        conv3 = tf.nn.relu(tf.nn.bias_add(kernel3, bias3))
+        pool3 = tf.nn.max_pool(conv3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
     # 使用slim简写3层卷积层
     # conv = slim.repeat(x, 3, slim.conv2d, 64, [3, 3], scope='conv')
@@ -70,31 +93,43 @@ def cnn_outputs():
     # 计算将池化后的矩阵reshape成向量后的长度
     pool_shape = pool3.get_shape().as_list()
     nodes = pool_shape[1] * pool_shape[2] * pool_shape[3]
-
     # 将池化后的矩阵reshape成向量
     dense = tf.reshape(pool3, [-1, nodes])
 
-    weights4 = tf.get_variable('weights4', [nodes, FULL_SIZE], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    bias4 = tf.get_variable('bias4', [FULL_SIZE], initializer=tf.constant_initializer(0.1))
-    local4 = tf.nn.relu(tf.nn.bias_add(tf.matmul(dense, weights4), bias=bias4))
+    with tf.variable_scope('fc1'):
+        weight4 = tf.get_variable('weights4', [nodes, FULL_SIZE], initializer=tf.truncated_normal_initializer(stddev=0.1))
+        variable_summary('weights4', weight4)
 
-    weight5 = tf.get_variable('weights5', [FULL_SIZE, WORD_NUM * wv.CHAR_NUM], initializer=tf.truncated_normal_initializer(stddev=0.1))
-    bias5 = tf.get_variable('bias5', [WORD_NUM * wv.CHAR_NUM], initializer=tf.constant_initializer(0.1))
-    outputs = tf.nn.sigmoid(tf.nn.bias_add(tf.matmul(local4, weight5), bias=bias5))
+        bias4 = tf.get_variable('bias4', [FULL_SIZE], initializer=tf.constant_initializer(0.1))
+        variable_summary('bias4', bias4)
+
+        fc1 = tf.nn.relu(tf.nn.bias_add(tf.matmul(dense, weight4), bias=bias4))
+
+    with tf.variable_scope('fc2'):
+        weight5 = tf.get_variable('weights5', [FULL_SIZE, WORD_NUM * wv.CHAR_NUM], initializer=tf.truncated_normal_initializer(stddev=0.1))
+        variable_summary('weights5', weight5)
+
+        bias5 = tf.get_variable('bias5', [WORD_NUM * wv.CHAR_NUM], initializer=tf.constant_initializer(0.1))
+        variable_summary('bias5', bias5)
+
+        outputs = tf.nn.bias_add(tf.matmul(fc1, weight5), bias5)
+    # fc2 = tf.nn.sigmoid(tf.nn.bias_add(tf.matmul(fc1, weight5), bias=bias5))
 
 
     # fc1 = slim.fully_connected(dense, FULL_SIZE, scope='fc1')
     # d1 = tf.nn.dropout(fc1, dropout)
     # fc2 = slim.fully_connected(d1, WORD_NUM * wv.CHAR_NUM, scope='fc2')
-    # outputs = tf.nn.dropout(local5, dropout)
+    # outputs = tf.nn.dropout(fc2, dropout)
     
     return outputs
 
 def run_training():
-    outputs = cnn_outputs()
 
+    outputs = inference()
     loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=Y, logits=outputs))
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
+    variable_summary('loss', loss)
+    merged = tf.summary.merge_all()
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
@@ -106,12 +141,22 @@ def run_training():
             saver.restore(sess, checkpoint)
             epoch += int(checkpoint.split('-')[-1])
 
-        while True:
-            batch_x, batch_y = next_batch(64)
-            _, accuracy = sess.run([optimizer, loss], feed_dict={X: batch_x, Y: batch_y, dropout: 0.75})
-            print('Epoch is {}, loss is {}, time is {}'.format(epoch, accuracy, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
-            epoch += 1
-            if epoch % 10 == 0:
-                saver.save(sess, CKPT_PATH, global_step=epoch)
+        writer = tf.summary.FileWriter(LOG_DIR)
+        try:
+            while True:
+                batch_x, batch_y = next_batch(128)
+                _, accuracy, summary_merged = sess.run([optimizer, loss, merged], feed_dict={X: batch_x, Y: batch_y, dropout: 0.75})
+                print('Epoch is {}, loss is {}, time is {}'.format(epoch, accuracy, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
+                writer.add_summary(summary_merged)
+                epoch += 1
+                if epoch % 10 == 0:
+                    saver.save(sess, CKPT_PATH, global_step=epoch)
+        except Exception:
+            saver.save(sess, CKPT_PATH, global_step=epoch)
+            writer.close()
 
-run_training()
+def main(_):
+    run_training()
+
+if __name__ == '__main__':
+    tf.app.run()

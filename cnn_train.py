@@ -11,7 +11,7 @@ IMAGE_WIDTH = 160
 # 字符数量
 WORD_NUM = 4
 # 全连接网络节点数量
-FULL_SIZE = 1024
+FULL_SIZE = 512
 # 持久化模型路径
 CKPT_DIR = 'model/'
 CKPT_PATH = CKPT_DIR + 'captcha.ckpt'
@@ -80,7 +80,7 @@ def cnn_outputs():
 
     weight5 = tf.get_variable('weights5', [FULL_SIZE, WORD_NUM * wv.CHAR_NUM], initializer=tf.truncated_normal_initializer(stddev=0.1))
     bias5 = tf.get_variable('bias5', [WORD_NUM * wv.CHAR_NUM], initializer=tf.constant_initializer(0.1))
-    outputs = tf.nn.relu(tf.nn.bias_add(tf.matmul(local4, weight5), bias=bias5))
+    outputs = tf.nn.sigmoid(tf.nn.bias_add(tf.matmul(local4, weight5), bias=bias5))
 
 
     # fc1 = slim.fully_connected(dense, FULL_SIZE, scope='fc1')

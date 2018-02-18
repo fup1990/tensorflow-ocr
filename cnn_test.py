@@ -1,5 +1,5 @@
 import tensorflow as tf
-from cnn_train import WORD_NUM, inference, X, dropout, CKPT_DIR
+from cnn_train import WORD_NUM, inference, CKPT_DIR
 from gen_captcha import captcha_text_image
 from word_vec import vec2word, CHAR_NUM
 import numpy as np
@@ -7,7 +7,7 @@ import numpy as np
 def predict_captcha():
     text, image = captcha_text_image(WORD_NUM)
     image = image.reshape(-1) / 256
-    outputs = inference()
+    input_data, _, outputs = inference(training=False, regularization=False)
     outputs = tf.nn.softmax(tf.reshape(outputs, [-1, WORD_NUM, CHAR_NUM]))
     prediction = tf.argmax(outputs[0], axis=1)
 
@@ -19,7 +19,7 @@ def predict_captcha():
         if checkpoint:
             saver.restore(sess, checkpoint)
 
-        vector = sess.run([prediction], feed_dict={X: [image], dropout: 1})
+        vector = sess.run(prediction, feed_dict={input_data: [image]})
         output = np.zeros((WORD_NUM, CHAR_NUM))
         for i in range(len(vector)):
             index = vector[i]

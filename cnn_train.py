@@ -15,11 +15,10 @@ FULL_SIZE = 512
 # 持久化模型路径
 CKPT_DIR = 'model/'
 CKPT_PATH = CKPT_DIR + 'captcha.ckpt'
+# tensorbord日志路径
 LOG_DIR = 'log/'
-
-X = tf.placeholder(dtype=tf.float32, shape=[None, IMAGE_WIDTH * IMAGE_HEIGHT])
-Y = tf.placeholder(dtype=tf.float32, shape=[None, WORD_NUM * wv.CHAR_NUM])
-dropout = tf.placeholder(dtype=tf.float32)
+# 正则化速率
+REGULARIZATION_RATE = 0.001
 
 def variable_summary(name,var):
     with tf.name_scope("summaries"):
@@ -45,10 +44,12 @@ def next_batch(batch_size=64):
 
     return batch_x, batch_y
 
-def inference():
+def inference(training=True, regularization=True):
 
+    input_data = tf.placeholder(dtype=tf.float32, shape=[None, IMAGE_WIDTH * IMAGE_HEIGHT])
+    label_data = tf.placeholder(dtype=tf.float32, shape=[None, WORD_NUM * wv.CHAR_NUM])
     # 将X转化为图片的shape(60，160，1)
-    x = tf.reshape(X, shape=[-1, IMAGE_HEIGHT, IMAGE_WIDTH, 1])
+    x = tf.reshape(input_data, shape=[-1, IMAGE_HEIGHT, IMAGE_WIDTH, 1])
 
     with tf.variable_scope('conv1'):
         # 四维矩阵的权重参数，3, 3是过滤器的尺寸，1为图片深度， 64为filter数量
@@ -102,8 +103,11 @@ def inference():
 
         bias4 = tf.get_variable('bias4', [FULL_SIZE], initializer=tf.constant_initializer(0.1))
         variable_summary('bias4', bias4)
-
+        if regularization:
+            tf.add_to_collection('loss', tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE)(weight4))
         fc1 = tf.nn.relu(tf.nn.bias_add(tf.matmul(dense, weight4), bias=bias4))
+        if training:
+            tf.nn.dropout(fc1, keep_prob=0.75)
 
     with tf.variable_scope('fc2'):
         weight5 = tf.get_variable('weights5', [FULL_SIZE, WORD_NUM * wv.CHAR_NUM], initializer=tf.truncated_normal_initializer(stddev=0.1))
@@ -112,6 +116,8 @@ def inference():
         bias5 = tf.get_variable('bias5', [WORD_NUM * wv.CHAR_NUM], initializer=tf.constant_initializer(0.1))
         variable_summary('bias5', bias5)
 
+        if regularization:
+            tf.add_to_collection('loss', tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE)(weight5))
         outputs = tf.nn.bias_add(tf.matmul(fc1, weight5), bias5)
     # fc2 = tf.nn.sigmoid(tf.nn.bias_add(tf.matmul(fc1, weight5), bias=bias5))
 
@@ -121,12 +127,14 @@ def inference():
     # fc2 = slim.fully_connected(d1, WORD_NUM * wv.CHAR_NUM, scope='fc2')
     # outputs = tf.nn.dropout(fc2, dropout)
     
-    return outputs
+    return input_data, label_data, outputs
 
 def run_training():
 
-    outputs = inference()
-    loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=Y, logits=outputs))
+    input_data, label_data, outputs = inference(training=True, regularization=True)
+    cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=label_data, logits=outputs))
+    tf.add_to_collection('loss', cross_entropy)
+    loss = tf.add_n(tf.get_collection('loss'))
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
     variable_summary('loss', loss)
     merged = tf.summary.merge_all()
@@ -145,7 +153,7 @@ def run_training():
         try:
             while True:
                 batch_x, batch_y = next_batch(128)
-                _, accuracy, summary_merged = sess.run([optimizer, loss, merged], feed_dict={X: batch_x, Y: batch_y, dropout: 0.75})
+                _, accuracy, summary_merged = sess.run([optimizer, loss, merged], feed_dict={input_data: batch_x, label_data: batch_y})
                 print('Epoch is {}, loss is {}, time is {}'.format(epoch, accuracy, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
                 writer.add_summary(summary_merged)
                 epoch += 1

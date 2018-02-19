@@ -20,3 +20,12 @@ def vec2word(vec):
         for j in no_zero:
             word += CHAR_SET[j]
     return word
+
+def main():
+    vec = word2vec('12ab')
+    print(vec)
+    word = vec2word(vec)
+    print(word)
+
+if __name__ == '__main__':
+    main()

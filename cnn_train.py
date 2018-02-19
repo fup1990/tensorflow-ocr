@@ -60,7 +60,8 @@ def inference(training=True, regularization=True):
         variable_summary('bias1', bias1)
 
         kernel1 = tf.nn.conv2d(x, weight1, strides=[1, 2, 2, 1], padding='SAME')
-        conv1 = tf.nn.relu(tf.nn.bias_add(kernel1, bias1))
+        # conv1 = tf.nn.relu(tf.nn.bias_add(kernel1, bias1))
+        conv1 = tf.nn.leaky_relu(tf.nn.bias_add(kernel1, bias1))
         # 输出shape(60, 160, 64)
         pool1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
@@ -72,7 +73,7 @@ def inference(training=True, regularization=True):
         variable_summary('bias2', bias2)
 
         kernel2 = tf.nn.conv2d(pool1, weight2, strides=[1, 1, 1, 1], padding='SAME')
-        conv2 = tf.nn.relu(tf.nn.bias_add(kernel2, bias2))
+        conv2 = tf.nn.leaky_relu(tf.nn.bias_add(kernel2, bias2))
         pool2 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
     with tf.variable_scope('conv3'):
@@ -83,7 +84,7 @@ def inference(training=True, regularization=True):
         variable_summary('bias3', bias3)
 
         kernel3 = tf.nn.conv2d(pool2, weight3, strides=[1, 1, 1, 1], padding='SAME')
-        conv3 = tf.nn.relu(tf.nn.bias_add(kernel3, bias3))
+        conv3 = tf.nn.leaky_relu(tf.nn.bias_add(kernel3, bias3))
         pool3 = tf.nn.max_pool(conv3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
     # 使用slim简写3层卷积层
@@ -105,7 +106,7 @@ def inference(training=True, regularization=True):
         variable_summary('bias4', bias4)
         if regularization:
             tf.add_to_collection('loss', tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE)(weight4))
-        fc1 = tf.nn.relu(tf.nn.bias_add(tf.matmul(dense, weight4), bias=bias4))
+        fc1 = tf.nn.leaky_relu(tf.nn.bias_add(tf.matmul(dense, weight4), bias=bias4))
         if training:
             tf.nn.dropout(fc1, keep_prob=0.75)
 

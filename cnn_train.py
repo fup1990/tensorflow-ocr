@@ -60,8 +60,10 @@ def inference(training=True, regularization=True):
         variable_summary('bias1', bias1)
 
         kernel1 = tf.nn.conv2d(x, weight1, strides=[1, 2, 2, 1], padding='SAME')
-        # conv1 = tf.nn.relu(tf.nn.bias_add(kernel1, bias1))
-        conv1 = tf.nn.leaky_relu(tf.nn.bias_add(kernel1, bias1))
+        # BN标准化
+        bn1 = tf.contrib.layers.batch_norm(kernel1, is_training=training)
+        conv1 = tf.nn.relu(tf.nn.bias_add(bn1, bias1))
+        # conv1 = tf.nn.leaky_relu(tf.nn.bias_add(bn1, bias1))
         # 输出shape(60, 160, 64)
         pool1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
@@ -73,7 +75,8 @@ def inference(training=True, regularization=True):
         variable_summary('bias2', bias2)
 
         kernel2 = tf.nn.conv2d(pool1, weight2, strides=[1, 1, 1, 1], padding='SAME')
-        conv2 = tf.nn.leaky_relu(tf.nn.bias_add(kernel2, bias2))
+        bn2 = tf.contrib.layers.batch_norm(kernel2, is_training=training)
+        conv2 = tf.nn.relu(tf.nn.bias_add(bn2, bias2))
         pool2 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
     with tf.variable_scope('conv3'):
@@ -84,7 +87,8 @@ def inference(training=True, regularization=True):
         variable_summary('bias3', bias3)
 
         kernel3 = tf.nn.conv2d(pool2, weight3, strides=[1, 1, 1, 1], padding='SAME')
-        conv3 = tf.nn.leaky_relu(tf.nn.bias_add(kernel3, bias3))
+        bn3 = tf.contrib.layers.batch_norm(kernel3, is_training=training)
+        conv3 = tf.nn.relu(tf.nn.bias_add(bn3, bias3))
         pool3 = tf.nn.max_pool(conv3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
     # 使用slim简写3层卷积层
@@ -106,7 +110,7 @@ def inference(training=True, regularization=True):
         variable_summary('bias4', bias4)
         if regularization:
             tf.add_to_collection('loss', tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE)(weight4))
-        fc1 = tf.nn.leaky_relu(tf.nn.bias_add(tf.matmul(dense, weight4), bias=bias4))
+        fc1 = tf.nn.relu(tf.nn.bias_add(tf.matmul(dense, weight4), bias=bias4))
         if training:
             tf.nn.dropout(fc1, keep_prob=0.75)
 
@@ -132,12 +136,19 @@ def inference(training=True, regularization=True):
 
 def run_training():
 
-    input_data, label_data, outputs = inference(training=True, regularization=True)
-    cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=label_data, logits=outputs))
-    tf.add_to_collection('loss', cross_entropy)
-    loss = tf.add_n(tf.get_collection('loss'))
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
-    variable_summary('loss', loss)
+    input_data, label_data, outputs = inference(training=True, regularization=False)
+    with tf.variable_scope('loss'):
+        cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=label_data, logits=outputs))
+        tf.add_to_collection('loss', cross_entropy)
+        loss = tf.add_n(tf.get_collection('loss'))
+        train_step = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
+        variable_summary('loss', loss)
+
+    with tf.variable_scope('accuracy'):
+        correct = tf.equal(tf.argmax(tf.reshape(outputs, shape=[-1, WORD_NUM, wv.CHAR_NUM]), 1), tf.argmax(tf.reshape(label_data, shape=[-1, WORD_NUM, wv.CHAR_NUM]), 1))
+        accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+        variable_summary('accuracy', accuracy)
+
     merged = tf.summary.merge_all()
 
     saver = tf.train.Saver()
@@ -153,9 +164,9 @@ def run_training():
         writer = tf.summary.FileWriter(LOG_DIR)
         try:
             while True:
-                batch_x, batch_y = next_batch(128)
-                _, accuracy, summary_merged = sess.run([optimizer, loss, merged], feed_dict={input_data: batch_x, label_data: batch_y})
-                print('Epoch is {}, loss is {}, time is {}'.format(epoch, accuracy, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
+                batch_x, batch_y = next_batch(64)
+                _, l, summary_merged, acc = sess.run([train_step, loss, merged, accuracy], feed_dict={input_data: batch_x, label_data: batch_y})
+                print('Epoch is {}, loss is {}, accuracy is {}, time is {}'.format(epoch, l, acc, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
                 writer.add_summary(summary_merged)
                 epoch += 1
                 if epoch % 10 == 0:

@@ -4,7 +4,7 @@ IMAGE_WIDTH = 60
 # 字符数量
 WORD_NUM = 1
 # 全连接网络节点数量
-FULL_SIZE = 512
+FULL_SIZE = 1024
 # 持久化模型路径
 CKPT_DIR = 'model/'
 CKPT_PATH = CKPT_DIR + 'captcha.ckpt'
@@ -20,4 +20,4 @@ CHAR_SET = number + alphabet + ALPHABET
 CHAR_NUM = len(number) + len(alphabet) + len(ALPHABET)
 # dropout
 KEEP_PROB = 0.75
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.01

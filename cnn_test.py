@@ -9,8 +9,9 @@ def predict_captcha():
     text, image = captcha_text_image(cfg.WORD_NUM)
     # image = image.reshape(-1) / 256
     input_data, _, outputs = inference(training=False, regularization=False)
-    outputs = tf.nn.softmax(tf.reshape(outputs, [-1, cfg.WORD_NUM, cfg.CHAR_NUM]))
-    prediction = tf.argmax(outputs[0], axis=1)
+    # outputs = tf.nn.softmax(tf.reshape(outputs, [-1, cfg.WORD_NUM, cfg.CHAR_NUM]))
+    outputs = tf.reshape(outputs, [-1, cfg.WORD_NUM, cfg.CHAR_NUM])
+    prediction = tf.argmax(outputs, axis=2)
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
@@ -20,7 +21,7 @@ def predict_captcha():
         if checkpoint:
             saver.restore(sess, checkpoint)
 
-        vector, opt = sess.run([prediction, outputs], feed_dict={input_data: [image]})
+        vector, opt = sess.run([prediction, outputs], feed_dict={input_data: [image / 255]})
         print(vector)
         print(opt)
         output = np.zeros((cfg.WORD_NUM, cfg.CHAR_NUM))

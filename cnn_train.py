@@ -24,7 +24,7 @@ def next_batch(batch_size=64):
         text, image = gc.captcha_text_image(cfg.WORD_NUM)
         # 一维化
         # image = image.reshape(-1) / 256
-        batch_x[i, :] = image
+        batch_x[i, :] = image / 255
         vec = wv.word2vec(text)
         batch_y[i, :] = vec.reshape(-1)
 
@@ -34,7 +34,6 @@ def inference(training=True, regularization=True):
 
     input_data = tf.placeholder(dtype=tf.float32, shape=[None, cfg.IMAGE_WIDTH, cfg.IMAGE_HEIGHT, 3])
     label_data = tf.placeholder(dtype=tf.float32, shape=[None, cfg.WORD_NUM * cfg.CHAR_NUM])
-    # 将X转化为图片的shape(60，160，1)
     # x = tf.reshape(input_data, shape=[-1, cfg.IMAGE_HEIGHT, cfg.IMAGE_WIDTH, 3])
 
     with tf.variable_scope('conv1'):
@@ -50,7 +49,6 @@ def inference(training=True, regularization=True):
         bn1 = tf.contrib.layers.batch_norm(kernel1, is_training=training)
         conv1 = tf.nn.relu(tf.nn.bias_add(bn1, bias1))
         # conv1 = tf.nn.leaky_relu(tf.nn.bias_add(bn1, bias1))
-        # 输出shape(60, 160, 64)
         pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME')
         lrn1 = tf.nn.lrn(pool1, name='lrn1')
 
@@ -100,7 +98,7 @@ def inference(training=True, regularization=True):
             tf.add_to_collection('loss', tf.contrib.layers.l2_regularizer(cfg.REGULARIZATION_RATE)(weight4))
         fc1 = tf.nn.relu(tf.nn.bias_add(tf.matmul(dense, weight4), bias=bias4))
         if training:
-            tf.nn.dropout(fc1, keep_prob=cfg.KEEP_PROB)
+            fc1 = tf.nn.dropout(fc1, keep_prob=cfg.KEEP_PROB)
 
     with tf.variable_scope('fc2'):
         weight5 = tf.get_variable('weights5', [cfg.FULL_SIZE, cfg.WORD_NUM * cfg.CHAR_NUM], initializer=tf.truncated_normal_initializer(stddev=0.01))
@@ -109,8 +107,8 @@ def inference(training=True, regularization=True):
         bias5 = tf.get_variable('bias5', [cfg.WORD_NUM * cfg.CHAR_NUM], initializer=tf.constant_initializer(0.0))
         variable_summary('bias5', bias5)
 
-        if regularization:
-            tf.add_to_collection('loss', tf.contrib.layers.l2_regularizer(cfg.REGULARIZATION_RATE)(weight5))
+        # if regularization:
+        #     tf.add_to_collection('loss', tf.contrib.layers.l2_regularizer(cfg.REGULARIZATION_RATE)(weight5))
         outputs = tf.nn.bias_add(tf.matmul(fc1, weight5), bias5)
     # fc2 = tf.nn.sigmoid(tf.nn.bias_add(tf.matmul(fc1, weight5), bias=bias5))
 
@@ -152,14 +150,15 @@ def run_training():
         writer = tf.summary.FileWriter(cfg.LOG_DIR)
         try:
             while True:
-                batch_x, batch_y = next_batch(64)
+                batch_x, batch_y = next_batch(128)
                 _, l, summary_merged = sess.run([train_step, loss, merged], feed_dict={input_data: batch_x, label_data: batch_y})
                 print('Epoch is {}, loss is {}, time is {}'.format(epoch, l, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
                 writer.add_summary(summary_merged)
                 epoch += 1
                 if epoch % 10 == 0:
                     saver.save(sess, cfg.CKPT_PATH, global_step=epoch)
-        except Exception:
+        except Exception as e:
+            print(e)
             saver.save(sess, cfg.CKPT_PATH, global_step=epoch)
             writer.close()
 

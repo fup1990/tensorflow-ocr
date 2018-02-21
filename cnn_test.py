@@ -1,26 +1,29 @@
 import tensorflow as tf
-from cnn_train import WORD_NUM, inference, CKPT_DIR
+from cnn_train import inference
 from gen_captcha import captcha_text_image
-from word_vec import vec2word, CHAR_NUM
+from word_vec import vec2word
 import numpy as np
+import config as cfg
 
 def predict_captcha():
-    text, image = captcha_text_image(WORD_NUM)
-    image = image.reshape(-1) / 256
+    text, image = captcha_text_image(cfg.WORD_NUM)
+    # image = image.reshape(-1) / 256
     input_data, _, outputs = inference(training=False, regularization=False)
-    outputs = tf.nn.softmax(tf.reshape(outputs, [-1, WORD_NUM, CHAR_NUM]))
+    outputs = tf.nn.softmax(tf.reshape(outputs, [-1, cfg.WORD_NUM, cfg.CHAR_NUM]))
     prediction = tf.argmax(outputs[0], axis=1)
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
         init = tf.initialize_all_variables()
         sess.run(init)
-        checkpoint = tf.train.latest_checkpoint(CKPT_DIR)
+        checkpoint = tf.train.latest_checkpoint(cfg.CKPT_DIR)
         if checkpoint:
             saver.restore(sess, checkpoint)
 
-        vector = sess.run(prediction, feed_dict={input_data: [image]})
-        output = np.zeros((WORD_NUM, CHAR_NUM))
+        vector, opt = sess.run([prediction, outputs], feed_dict={input_data: [image]})
+        print(vector)
+        print(opt)
+        output = np.zeros((cfg.WORD_NUM, cfg.CHAR_NUM))
         for i in range(len(vector)):
             index = vector[i]
             output[i][index] = 1

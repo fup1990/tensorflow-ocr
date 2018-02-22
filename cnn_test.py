@@ -27,8 +27,10 @@ def predict_captcha():
         vector = sess.run([prediction], feed_dict={input_data: input_image})
         vector = vector[0].tolist()
         output = np.zeros((cfg.WORD_NUM * cfg.CHAR_NUM))
-        for i in range(cfg.WORD_NUM):
-            output[i * cfg.CHAR_NUM + vector[i]] = 1
+        i = 0
+        for n in vector[0]:
+            output[i * cfg.CHAR_NUM + n] = 1
+            i += 1
         predict_text = vec2word(output)
         print("正确: {}  预测: {}".format(text, predict_text))
 

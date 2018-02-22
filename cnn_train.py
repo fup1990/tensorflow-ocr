@@ -74,7 +74,7 @@ def inference(training=True, regularization=True):
         bn3 = tf.contrib.layers.batch_norm(kernel3, is_training=training)
         conv3 = tf.nn.relu(tf.nn.bias_add(bn3, bias3))
         lrn3 = tf.nn.lrn(conv3, name='lrn2')
-        pool3 = tf.nn.max_pool(lrn3, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+        pool3 = tf.nn.max_pool(lrn3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
 
     # 使用slim简写3层卷积层
     # conv = slim.repeat(x, 3, slim.conv2d, 64, [3, 3], scope='conv')
@@ -123,7 +123,7 @@ def run_training():
 
     input_data, label_data, outputs = inference(training=True, regularization=True)
     with tf.variable_scope('loss'):
-        cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=outputs, labels=label_data))
+        cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=label_data, logits=outputs))
         tf.add_to_collection('loss', cross_entropy)
         loss = tf.add_n(tf.get_collection('loss'))
         train_step = tf.train.AdamOptimizer(learning_rate=cfg.LEARNING_RATE).minimize(loss)

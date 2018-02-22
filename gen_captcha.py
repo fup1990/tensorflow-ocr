@@ -15,11 +15,11 @@ def random_captcha_text(char_set, size=4):
 
 def captcha_text_image(word_num):
 
-    captcha_text = random_captcha_text(char_set=cfg.CHAR_SET,size=word_num)
+    captcha_text = random_captcha_text(char_set=cfg.CHAR_SET, size=word_num)
     captcha_text = ''.join(captcha_text)
 
     # 导入验证码包 生成一张空白图
-    image = ImageCaptcha(cfg.IMAGE_WIDTH, cfg.IMAGE_HEIGHT)
+    image = ImageCaptcha(cfg.IMAGE_WIDTH, cfg.IMAGE_HEIGHT, font_sizes=(25, 25, 56))
     captcha = image.generate(captcha_text)
     # 转换为图片格式
     captcha_image = Image.open(captcha)

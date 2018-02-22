@@ -121,7 +121,7 @@ def inference(training=True, regularization=True):
 
 def run_training():
 
-    input_data, label_data, outputs = inference(training=True, regularization=False)
+    input_data, label_data, outputs = inference(training=True, regularization=True)
     with tf.variable_scope('loss'):
         cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=outputs, labels=label_data))
         tf.add_to_collection('loss', cross_entropy)
@@ -142,7 +142,7 @@ def run_training():
     with tf.Session() as sess:
         init = tf.initialize_all_variables()
         sess.run(init)
-        checkpoint = tf.train.latest_checkpoint(cfg.CKPT_DIR)
+        checkpoint = tf.train.latest_checkpoint(cfg.CKPT_PATH)
         epoch = 0
         if checkpoint:
             saver.restore(sess, checkpoint)

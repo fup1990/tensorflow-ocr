@@ -2,7 +2,7 @@
 IMAGE_HEIGHT = 60
 IMAGE_WIDTH = 60
 # 字符数量
-WORD_NUM = 1
+WORD_NUM = 4
 # 全连接网络节点数量
 FULL_SIZE = 1024
 # 持久化模型路径

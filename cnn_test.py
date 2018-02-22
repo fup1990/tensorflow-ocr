@@ -24,7 +24,7 @@ def predict_captcha():
         if checkpoint:
             saver.restore(sess, checkpoint)
 
-        vector, opt = sess.run([prediction, outputs], feed_dict={input_data: input_image})
+        vector = sess.run([prediction], feed_dict={input_data: input_image})
         vector = vector[0].tolist()
         output = np.zeros((cfg.WORD_NUM * cfg.CHAR_NUM))
         for i in range(cfg.WORD_NUM):

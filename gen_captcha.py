@@ -26,7 +26,7 @@ def captcha_text_image(word_num):
     # 转化为numpy数组 shape=(60, 160, 3)
     captcha_image = np.array(captcha_image)
 
-    # captcha_image = convert2gray(captcha_image)
+    captcha_image = convert2gray(captcha_image)
 
     return captcha_text, captcha_image
 

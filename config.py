@@ -20,4 +20,4 @@ CHAR_SET = number + alphabet + ALPHABET
 CHAR_NUM = len(number) + len(alphabet) + len(ALPHABET)
 # dropout
 KEEP_PROB = 0.75
-LEARNING_RATE = 0.01
+LEARNING_RATE = 0.001

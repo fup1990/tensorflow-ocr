@@ -2,11 +2,15 @@ from captcha.image import ImageCaptcha
 import random
 from PIL import Image
 import numpy as np
-import config as cfg
 import matplotlib.pyplot as plt
 
+# 验证码中的字符
+number = ['0','1','2','3','4','5','6','7','8','9']
+alphabet = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
+ALPHABET = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
+
 # 生成文字验证码
-def random_captcha_text(char_set, size=4):
+def random_captcha_text(char_set=number + alphabet + ALPHABET, size=4):
     text = []
     for i in range(size):
         r = random.choice(char_set)
@@ -15,11 +19,10 @@ def random_captcha_text(char_set, size=4):
 
 def captcha_text_image(word_num):
 
-    captcha_text = random_captcha_text(char_set=cfg.CHAR_SET, size=word_num)
+    captcha_text = random_captcha_text(size=word_num)
     captcha_text = ''.join(captcha_text)
 
     # 导入验证码包 生成一张空白图
-    image = ImageCaptcha(cfg.IMAGE_WIDTH, cfg.IMAGE_HEIGHT, font_sizes=(35, 35, 56))
     captcha = image.generate(captcha_text)
     # 转换为图片格式
     captcha_image = Image.open(captcha)
@@ -38,9 +41,3 @@ def convert2gray(img):
         return gray
     else:
         return img
-
-if __name__ == '__main__':
-    text, image = captcha_text_image(cfg.WORD_NUM)
-    print(text)
-    plt.imshow(image)
-    plt.show()

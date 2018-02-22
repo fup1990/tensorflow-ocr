@@ -36,10 +36,10 @@ def inference(training=True, regularization=True):
 
     with tf.variable_scope('conv1'):
         # 四维矩阵的权重参数，3, 3是过滤器的尺寸，1为图片深度， 64为filter数量
-        weight1 = tf.get_variable('weights1', [3, 3, 1, 32], initializer=tf.random_normal_initializer(stddev=0.01))
+        weight1 = tf.get_variable('weights1', [3, 3, 1, 64], initializer=tf.random_normal_initializer(stddev=0.01))
         variable_summary('weights1', weight1)
 
-        bias1 = tf.get_variable('bias1', [32], initializer=tf.constant_initializer(0.1))
+        bias1 = tf.get_variable('bias1', [64], initializer=tf.constant_initializer(0.1))
         variable_summary('bias1', bias1)
 
         kernel1 = tf.nn.conv2d(x, weight1, strides=[1, 1, 1, 1], padding='SAME')
@@ -51,7 +51,7 @@ def inference(training=True, regularization=True):
         lrn1 = tf.nn.lrn(pool1, name='lrn1')
 
     with tf.variable_scope('conv2'):
-        weight2 = tf.get_variable('weights2', [3, 3, 32, 64], initializer=tf.random_normal_initializer(stddev=0.01))
+        weight2 = tf.get_variable('weights2', [3, 3, 64, 64], initializer=tf.random_normal_initializer(stddev=0.01))
         variable_summary('weights2', weight2)
 
         bias2 = tf.get_variable('bias2', [64], initializer=tf.constant_initializer(0.1))

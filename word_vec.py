@@ -21,7 +21,7 @@ def vec2word(vec):
     return word
 
 def main():
-    vec1 = word2vec('a')
+    vec1 = word2vec('absd')
     print(vec1)
     word1 = vec2word(vec1)
     print(word1)

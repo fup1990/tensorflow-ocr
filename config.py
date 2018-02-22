@@ -1,6 +1,6 @@
 # 图像大小
-IMAGE_HEIGHT = 60
-IMAGE_WIDTH = 60
+IMAGE_HEIGHT = 80
+IMAGE_WIDTH = 80
 # 字符数量
 WORD_NUM = 4
 # 全连接网络节点数量

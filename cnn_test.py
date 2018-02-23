@@ -20,7 +20,7 @@ def predict_captcha():
     with tf.Session() as sess:
         init = tf.initialize_all_variables()
         sess.run(init)
-        checkpoint = tf.train.latest_checkpoint(cfg.CKPT_PATH)
+        checkpoint = tf.train.latest_checkpoint(cfg.CKPT_DIR)
         if checkpoint:
             saver.restore(sess, checkpoint)
 

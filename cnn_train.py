@@ -44,7 +44,7 @@ def inference(training=True, regularization=True):
 
         kernel1 = tf.nn.conv2d(x, weight1, strides=[1, 1, 1, 1], padding='SAME')
         # BN标准化
-        bn1 = tf.contrib.layers.batch_norm(kernel1, is_training=training)
+        bn1 = tf.contrib.layers.batch_norm(kernel1, is_training=True)
         conv1 = tf.nn.relu(tf.nn.bias_add(bn1, bias1))
         # conv1 = tf.nn.leaky_relu(tf.nn.bias_add(bn1, bias1))
         pool1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
@@ -58,7 +58,7 @@ def inference(training=True, regularization=True):
         variable_summary('bias2', bias2)
 
         kernel2 = tf.nn.conv2d(lrn1, weight2, strides=[1, 1, 1, 1], padding='SAME')
-        bn2 = tf.contrib.layers.batch_norm(kernel2, is_training=training)
+        bn2 = tf.contrib.layers.batch_norm(kernel2, is_training=True)
         conv2 = tf.nn.relu(tf.nn.bias_add(bn2, bias2))
         pool2 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
         lrn2 = tf.nn.lrn(pool2, name='lrn2')
@@ -71,7 +71,7 @@ def inference(training=True, regularization=True):
         variable_summary('bias3', bias3)
 
         kernel3 = tf.nn.conv2d(lrn2, weight3, strides=[1, 1, 1, 1], padding='SAME')
-        bn3 = tf.contrib.layers.batch_norm(kernel3, is_training=training)
+        bn3 = tf.contrib.layers.batch_norm(kernel3, is_training=True)
         conv3 = tf.nn.relu(tf.nn.bias_add(bn3, bias3))
         lrn3 = tf.nn.lrn(conv3, name='lrn2')
         pool3 = tf.nn.max_pool(lrn3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')

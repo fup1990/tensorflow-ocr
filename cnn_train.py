@@ -142,7 +142,7 @@ def run_training():
     with tf.Session() as sess:
         init = tf.initialize_all_variables()
         sess.run(init)
-        checkpoint = tf.train.latest_checkpoint(cfg.CKPT_PATH)
+        checkpoint = tf.train.latest_checkpoint(cfg.CKPT_DIR)
         epoch = 0
         if checkpoint:
             saver.restore(sess, checkpoint)

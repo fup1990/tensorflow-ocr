@@ -4,6 +4,7 @@ from gen_captcha import captcha_text_image
 from word_vec import vec2word
 import numpy as np
 import config as cfg
+import matplotlib.pyplot as plt
 
 def predict_captcha():
     text, image = captcha_text_image(cfg.WORD_NUM)
@@ -33,6 +34,8 @@ def predict_captcha():
             i += 1
         predict_text = vec2word(output)
         print("正确: {}  预测: {}".format(text, predict_text))
+        plt.imshow(image)
+        plt.show()
 
 def main(_):
     predict_captcha()

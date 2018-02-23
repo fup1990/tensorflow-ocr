@@ -106,9 +106,11 @@ def inference(training=True, regularization=True):
         bias5 = tf.get_variable('bias5', [cfg.WORD_NUM * cfg.CHAR_NUM], initializer=tf.constant_initializer(0.1))
         variable_summary('bias5', bias5)
 
-        # if regularization:
-        #     tf.add_to_collection('loss', tf.contrib.layers.l2_regularizer(cfg.REGULARIZATION_RATE)(weight5))
+        if regularization:
+            tf.add_to_collection('loss', tf.contrib.layers.l2_regularizer(cfg.REGULARIZATION_RATE)(weight5))
         outputs = tf.nn.bias_add(tf.matmul(fc1, weight5), bias5)
+        if training:
+            outputs = tf.nn.dropout(outputs, keep_prob=cfg.KEEP_PROB)
     # fc2 = tf.nn.sigmoid(tf.nn.bias_add(tf.matmul(fc1, weight5), bias=bias5))
 
 

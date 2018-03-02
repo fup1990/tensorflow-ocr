@@ -19,5 +19,5 @@ ALPHABET = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'
 CHAR_SET = number + alphabet + ALPHABET
 CHAR_NUM = len(number) + len(alphabet) + len(ALPHABET)
 # dropout
-KEEP_PROB = 0.75
-LEARNING_RATE = 0.001
+KEEP_PROB = 0.5
+LEARNING_RATE = 0.01

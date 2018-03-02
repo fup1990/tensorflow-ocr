@@ -109,8 +109,8 @@ def inference(training=True, regularization=True):
         if regularization:
             tf.add_to_collection('loss', tf.contrib.layers.l2_regularizer(cfg.REGULARIZATION_RATE)(weight5))
         outputs = tf.nn.bias_add(tf.matmul(fc1, weight5), bias5)
-        if training:
-            outputs = tf.nn.dropout(outputs, keep_prob=cfg.KEEP_PROB)
+        # if training:
+        #     outputs = tf.nn.dropout(outputs, keep_prob=cfg.KEEP_PROB)
     # fc2 = tf.nn.sigmoid(tf.nn.bias_add(tf.matmul(fc1, weight5), bias=bias5))
 
 
@@ -128,7 +128,9 @@ def run_training():
         cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=label_data, logits=outputs))
         tf.add_to_collection('loss', cross_entropy)
         loss = tf.add_n(tf.get_collection('loss'))
-        train_step = tf.train.AdamOptimizer(learning_rate=cfg.LEARNING_RATE).minimize(loss)
+        global_step = tf.Variable(0)
+        learning_rate = tf.train.exponential_decay(cfg.LEARNING_RATE, global_step, 1000, 0.1)
+        train_step = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
         variable_summary('loss', loss)
 
     with tf.variable_scope('accuracy'):
@@ -154,8 +156,8 @@ def run_training():
         try:
             while True:
                 batch_x, batch_y = next_batch(128)
-                _, l, summary_merged, acc = sess.run([train_step, loss, merged, accuracy], feed_dict={input_data: batch_x, label_data: batch_y})
-                print('Epoch is {}, loss is {}, accuracy is {} time is {}'.format(epoch, l, acc, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
+                _, l, summary_merged, acc, lr = sess.run([train_step, loss, merged, accuracy, learning_rate], feed_dict={input_data: batch_x, label_data: batch_y, global_step: epoch})
+                print('Epoch is {}, loss is {}, learning rate is {}, accuracy is {} time is {}'.format(epoch, l, lr, acc, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
                 writer.add_summary(summary_merged)
                 epoch += 1
                 if epoch % 10 == 0:

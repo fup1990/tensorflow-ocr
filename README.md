@@ -1,5 +1,5 @@
 # tensorflow-ocr
-使用tensorflow构建神经网络，识别图片验证码中的文字。<br/>
+使用tensorflow构建神经网络，识别图片中的文字。<br/>
 
 # 版本说明
  - python:3.5

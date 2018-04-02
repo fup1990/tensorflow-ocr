@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.contrib import rnn
 import numpy as np
 
 def conv2d(input_data, out_channel, ksize=3, strides=1, padding=1, w_init=None, b_init=None, name=None):
@@ -95,8 +96,20 @@ def map_to_sequence(input_data):
     return tf.squeeze(input_data)
 
 # BiRNN
-def birnn():
-
+def birnn(input_data, is_training):
+    cells_fw_list = [rnn.BasicLSTMCell(256, forget_bias=1.0), rnn.BasicLSTMCell(256, forget_bias=1.0)]
+    cells_bw_list = [rnn.BasicLSTMCell(256, forget_bias=1.0), rnn.BasicLSTMCell(256, forget_bias=1.0)]
+    stack_lstm_layer, _, _ = rnn.stack_bidirectional_dynamic_rnn(cells_fw_list, cells_bw_list, dtype=tf.float32)
+    if is_training:
+        stack_lstm_layer = tf.nn.dropout(stack_lstm_layer, keep_prob=0.5)
+    [batch_s, _, hidden_nums] = input_data.get_shape().as_list()  # [batch, width, 2*n_hidden]
+    rnn_reshaped = tf.reshape(stack_lstm_layer, [-1, hidden_nums])  # [batch x width, 2*n_hidden]
+    weights = tf.Variable(tf.truncated_normal([hidden_nums, 37], stddev=0.1))
+    logits = tf.matmul(rnn_reshaped, weights)
+    logits = tf.reshape(logits, [batch_s, -1, 37])
+    rnn_out = tf.argmax(tf.nn.softmax(logits), axis=2)
+    return rnn_out, logits
 
 # Transcription
-
+def transpose(logits):
+    return tf.transpose(logits, perm=[1, 0, 2])

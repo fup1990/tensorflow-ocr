@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.contrib import rnn
 import numpy as np
 
-def conv2d(input_data, out_channel, ksize=3, strides=1, padding=1, w_init=None, b_init=None, name=None):
+def conv2d(input_data, out_channel, ksize=3, strides=1, padding=0, w_init=None, b_init=None, name=None):
 
     in_shape = input_data.get_shape().as_list()
 
@@ -28,8 +28,10 @@ def conv2d(input_data, out_channel, ksize=3, strides=1, padding=1, w_init=None, 
     if b_init is None:
         b_init = tf.constant_initializer()
 
-    weights = tf.get_variable("weights", filter, initializer=w_init)
-    bias = tf.get_variable('bias', [out_channel], initializer=b_init)
+    weights = tf.Variable(tf.random_normal(filter, mean=0.0, stddev=1.0, dtype=tf.float32))
+    bias = tf.Variable(tf.random_normal([out_channel], mean=0.0, stddev=1.0, dtype=tf.float32))
+    # weights = tf.get_variable("weights", filter, initializer=w_init)
+    # bias = tf.get_variable('bias', [out_channel], initializer=b_init)
 
     conv = tf.nn.conv2d(input_data, weights, strides, padding, name=name)
 
@@ -81,7 +83,7 @@ def conv(input_data):
     conv10 = conv2d(bn9, out_channel=512)
     bn11 = batch_norm(conv10)
     pool12 = max_pooling(bn11, ksize=[2, 1], strides=[2, 1])            # batch*2*25*512
-    conv13 = conv2d(pool12, out_channel=512, ksize=2, strides=[2, 1], padding=0)
+    conv13 = conv2d(pool12, out_channel=512, ksize=2, strides=[2, 1], padding=0)    # batch*1*25*512
     return conv13
 
 # Map-to-Sequence
@@ -99,7 +101,7 @@ def map_to_sequence(input_data):
 def birnn(input_data, is_training):
     cells_fw_list = [rnn.BasicLSTMCell(256, forget_bias=1.0), rnn.BasicLSTMCell(256, forget_bias=1.0)]
     cells_bw_list = [rnn.BasicLSTMCell(256, forget_bias=1.0), rnn.BasicLSTMCell(256, forget_bias=1.0)]
-    stack_lstm_layer, _, _ = rnn.stack_bidirectional_dynamic_rnn(cells_fw_list, cells_bw_list, dtype=tf.float32)
+    stack_lstm_layer, _, _ = rnn.stack_bidirectional_dynamic_rnn(cells_fw_list, cells_bw_list, input_data, dtype=tf.float32)
     if is_training:
         stack_lstm_layer = tf.nn.dropout(stack_lstm_layer, keep_prob=0.5)
     [batch_s, _, hidden_nums] = input_data.get_shape().as_list()  # [batch, width, 2*n_hidden]
@@ -113,3 +115,18 @@ def birnn(input_data, is_training):
 # Transcription
 def transpose(logits):
     return tf.transpose(logits, perm=[1, 0, 2])
+
+def test():
+    input_data = tf.placeholder(tf.float32, (2, 32, 100, 3))
+    c = conv(input_data)
+    mts = map_to_sequence(c)
+    r = birnn(mts, True)
+    data = np.zeros(19200)
+    data = np.reshape(data, [2, 32, 100, 3])
+    with tf.Session() as sess:
+        init = tf.global_variables_initializer()
+        sess.run(init)
+        rnn, l = sess.run(r, feed_dict={input_data: data})
+
+
+test()

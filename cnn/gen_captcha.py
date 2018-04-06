@@ -1,9 +1,12 @@
-from captcha.image import ImageCaptcha
 import random
-from PIL import Image
-import numpy as np
-import config as cfg
+
 import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image
+from captcha.image import ImageCaptcha
+
+from cnn import config as cfg
+
 
 # 生成文字验证码
 def random_captcha_text(char_set, size=4):

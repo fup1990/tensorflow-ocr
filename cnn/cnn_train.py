@@ -1,9 +1,12 @@
-import numpy as np
-import gen_captcha as gc
-import word_vec as wv
-import tensorflow as tf
-import config as cfg
 import time
+
+from cnn import config as cfg
+import numpy as np
+import tensorflow as tf
+from cnn import word_vec as wv
+
+from cnn import gen_captcha as gc
+
 slim = tf.contrib.slim
 
 def variable_summary(name,var):

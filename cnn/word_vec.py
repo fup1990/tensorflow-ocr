@@ -1,5 +1,6 @@
 import numpy as np
-import config as cfg
+
+from cnn import config as cfg
 
 
 def word2vec(word):

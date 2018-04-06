@@ -1,17 +1,19 @@
-import tensorflow as tf
-from cnn_train import inference, next_batch
-from gen_captcha import captcha_text_image
-from word_vec import vec2word
-import numpy as np
-import config as cfg
+from cnn import config as cfg
 import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
+from cnn import cnn_train as ct
+from cnn import word_vec as wv
+
+from cnn.gen_captcha import captcha_text_image
+
 
 def predict_captcha():
     text, image = captcha_text_image(cfg.WORD_NUM)
     input_image = np.zeros((1, cfg.IMAGE_WIDTH * cfg.IMAGE_HEIGHT))
     input_image[0, :] = image.reshape(-1) / 256
 
-    input_data, _, outputs = inference(training=False, regularization=False)
+    input_data, _, outputs = ct.inference(training=False, regularization=False)
     # outputs = tf.nn.softmax(tf.reshape(outputs, [-1, cfg.WORD_NUM, cfg.CHAR_NUM]))
     # outputs = tf.reshape(outputs, [-1, cfg.WORD_NUM, cfg.CHAR_NUM])
     # prediction = tf.argmax(outputs, axis=2)
@@ -32,7 +34,7 @@ def predict_captcha():
         for n in vector[0]:
             output[i * cfg.CHAR_NUM + n] = 1
             i += 1
-        predict_text = vec2word(output)
+        predict_text = wv.vec2word(output)
         print("正确: {}  预测: {}".format(text, predict_text))
         plt.imshow(image)
         plt.show()

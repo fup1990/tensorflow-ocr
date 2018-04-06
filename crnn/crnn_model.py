@@ -114,19 +114,3 @@ def birnn(input_data, is_training):
 # Transcription
 def transpose(logits):
     return tf.transpose(logits, perm=[1, 0, 2])
-
-def test():
-    input_data = tf.placeholder(tf.float32, (2, 32, 100, 3))
-    c = conv(input_data)
-    mts = map_to_sequence(c)
-    r = birnn(mts, True)
-    data = np.zeros(19200)
-    data = np.reshape(data, [2, 32, 100, 3])
-    with tf.Session() as sess:
-        init = tf.global_variables_initializer()
-        sess.run(init)
-        rnn, l = sess.run(r, feed_dict={input_data: data})
-        print(rnn)
-        print(l)
-
-test()

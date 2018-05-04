@@ -81,3 +81,6 @@
    <td>248</td>
   </tr>
  </table>
+
+# CRNN论文
+https://www.jianshu.com/p/14141f8b94e5
